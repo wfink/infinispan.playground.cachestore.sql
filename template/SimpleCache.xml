@@ -1,0 +1,14 @@
+<infinispan>
+  <cache-container>
+    <distributed-cache name="SimpleCache">
+      <encoding media-type="application/x-protostream"/>
+
+      <persistence>
+        <table-jdbc-store xmlns="urn:infinispan:config:store:sql:13.0" shared="true" table-name="Simple">
+	  <data-source jndi-url="jdbc/mariaDB"/>
+        </table-jdbc-store>
+      </persistence>
+    </distributed-cache>
+
+  </cache-container>
+</infinispan>
