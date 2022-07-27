@@ -29,10 +29,9 @@ Create a user, the examples use user infinispan for username and password. The d
 
 Type this to create the tables
 
-        $ mysql -u infinispan -p
-           Enter password: <infnispan>
-           MariaDB [(none)]> use infinispan
+        $ mysql -u infinispan --password=infinispan -D infinispan
            MariaDB [infinispan]> create table Simple (id int PRIMARY KEY, value VARCHAR(50) );
+           MariaDB [infinispan]> create table Person (id VARCHAR(20) PRIMARY KEY, name VARCHAR(50), firstname VARCHAR(50) );
 
 
 Prepare a server instance
@@ -86,6 +85,35 @@ If you drop the table and recreate it with
        create table Simple (id VARCHAR(50) PRIMARY KEY, value VARCHAR(50) );
 
 The SimpleClient will have an unexpected behavior! There is [ISPN-14029](https://issues.redhat.com/browse/ISPN-14029) to track this.
+
+
+Entry with simpe PKey and Protobuf schema
+-----------------------------------------
+If there are more attributes a schema is needed to load the data from the DB table into cached objects.
+The schema should use the protostream-processor and @AutoProtoSchemaBuilder annotation to generate the necessary schema definition and concrete SerializationContext implementation.
+After mvn has build the project the schema is available and can be used to publish it to the server.
+Use the following command, or any prefered REST client to propagate the schema to the server. This should be done before the cache is created.
+
+       curl -X PUT --ddata-binary @target/classes/proto/Person.proto http://127.0.0.1:11222/rest/v2/schemas/Person.proto
+
+The generated file Person.proto is added to the server.
+Now the cache can be created with the following CLI command
+
+       $SERVER_HOMEbin/cli.sh -c localhost:11222
+        > create cache --file=template/PersonCache.xml PersonCache
+
+The command should return without any error message.
+Type this command to run the example
+
+       mvn exec:java -D"exec.mainClass"="org.infinispan.wfink.playground.cachestore.sql.PersonClient"
+     
+
+Note
+- To prevent from server restart the schema must be added to the server before the cache is created. Otherwise the cache is not started and the client will fail with ISPN008047 error
+- The protobuf schema and cached class might contain additional attributes
+- The DB table can not have additional attributes which are not mapped by teh schema. In that case ISPN008046 error is thrown during cache initialization and will show the additional columns.
+- configure expiration is not supported by the SQL store and might lead to unexpected behavior, see [ISPN-14037](https://issues.redhat.com/browse/ISPN-14037)
+
 
 
 Errors
