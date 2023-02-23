@@ -92,9 +92,10 @@ Entry with simpe PKey and Protobuf schema
 If there are more attributes a schema is needed to load the data from the DB table into cached objects.
 The schema should use the protostream-processor and @AutoProtoSchemaBuilder annotation to generate the necessary schema definition and concrete SerializationContext implementation.
 After mvn has build the project the schema is available and can be used to publish it to the server.
+Otherwise a server start will fail if the cache with store is configured with the Person schema and the schema is not avaialable.
 Use the following command, or any prefered REST client to propagate the schema to the server. This should be done before the cache is created.
 
-       curl -X PUT --ddata-binary @target/classes/proto/Person.proto http://127.0.0.1:11222/rest/v2/schemas/Person.proto
+       curl -X PUT --data-binary @target/classes/proto/Person.proto http://127.0.0.1:11222/rest/v2/schemas/Person.proto
 
 The generated file Person.proto is added to the server.
 Now the cache can be created with the following CLI command
@@ -114,7 +115,12 @@ Note
 - The DB table can not have additional attributes which are not mapped by teh schema. In that case ISPN008046 error is thrown during cache initialization and will show the additional columns.
 - configure expiration is not supported by the SQL store and might lead to unexpected behavior, see [ISPN-14037](https://issues.redhat.com/browse/ISPN-14037)
 
+Enhancements
+------------
+It is possible to mark the store as read-only, in this case any change of the cached data is not updating the DB table. But consider it is not possible to prevent clients from 
+add or change entries. The downside is that such changes are lost if the server is restarted. There is a [Feature request ISPN-14531](https://issues.redhat.com/browse/ISPN-14531) to prevent from this.
 
+If the client code for adding content is removed after the first invocation and/or the database table is populated with some enties and the store is marked as read-only the client will reload the cache from the database.
 
 Errors
 ------
